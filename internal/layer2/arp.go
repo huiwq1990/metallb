@@ -47,8 +47,11 @@ func (a *arpResponder) Close() error {
 	return a.conn.Close()
 }
 
+// arp主动广播
+// 可以用来更新网络中当前机器的 ARP 缓存。
 func (a *arpResponder) Gratuitous(ip net.IP) error {
 	for _, op := range []arp.Operation{arp.OperationRequest, arp.OperationReply} {
+		// 发送和接收IP都是发送报文的IP，广播模式
 		pkt, err := arp.NewPacket(op, a.hardwareAddr, ip, ethernet.Broadcast, ip)
 		if err != nil {
 			return fmt.Errorf("assembling %q gratuitous packet for %q: %s", op, ip, err)

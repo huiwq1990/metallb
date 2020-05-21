@@ -116,7 +116,7 @@ func New(cfg *Config) (*Client, error) {
 		events: recorder,
 		queue:  queue,
 	}
-
+	// service 和 endpoint变化，最后都转化为svc的变化
 	if cfg.ServiceChanged != nil {
 		svcHandlers := cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -339,6 +339,7 @@ func (c *Client) sync(key interface{}) SyncState {
 	defer c.queue.Done(key)
 
 	switch k := key.(type) {
+	// svc发生变化
 	case svcKey:
 		l := log.With(c.logger, "service", string(k))
 		svc, exists, err := c.svcIndexer.GetByKey(string(k))

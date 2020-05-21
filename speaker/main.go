@@ -152,7 +152,7 @@ func main() {
 		MetricsHost:   *host,
 		MetricsPort:   *port,
 		ReadEndpoints: true,
-
+		// svc变化，触发更新LB
 		ServiceChanged: ctrl.SetBalancer,
 		ConfigChanged:  ctrl.SetConfig,
 		NodeChanged:    ctrl.SetNode,
@@ -235,6 +235,7 @@ func newController(cfg controllerConfig) (*controller, error) {
 	}
 
 	if !cfg.DisableLayer2 {
+		// 创建arp announcer，同时启动网卡扫描，定时创建arp responser服务
 		a, err := layer2.New(cfg.Logger)
 		if err != nil {
 			return nil, fmt.Errorf("making layer2 announcer: %s", err)
@@ -256,6 +257,7 @@ func newController(cfg controllerConfig) (*controller, error) {
 	return ret, nil
 }
 
+// name是service，代表哪种类型资源变更
 func (c *controller) SetBalancer(l gokitlog.Logger, name string, svc *v1.Service, eps *v1.Endpoints) k8s.SyncState {
 	if svc == nil {
 		return c.deleteBalancer(l, name, "serviceDeleted")
@@ -263,7 +265,7 @@ func (c *controller) SetBalancer(l gokitlog.Logger, name string, svc *v1.Service
 
 	l.Log("event", "startUpdate", "msg", "start of service update")
 	defer l.Log("event", "endUpdate", "msg", "end of service update")
-
+	// 变为非LB类型，删除LB
 	if svc.Spec.Type != "LoadBalancer" {
 		return c.deleteBalancer(l, name, "notLoadBalancer")
 	}
@@ -317,10 +319,12 @@ func (c *controller) SetBalancer(l gokitlog.Logger, name string, svc *v1.Service
 		return c.deleteBalancer(l, name, "internalError")
 	}
 
+	// 判断是否有资格进行announce
+	// 对于layer2模式，选择 nodehash最小的节点
 	if deleteReason := handler.ShouldAnnounce(l, name, svc, eps); deleteReason != "" {
 		return c.deleteBalancer(l, name, deleteReason)
 	}
-
+	// 调用layer2或bgp的实现
 	if err := handler.SetBalancer(l, name, lbIP, pool); err != nil {
 		l.Log("op", "setBalancer", "error", err, "msg", "failed to announce service")
 		return k8s.SyncStateError

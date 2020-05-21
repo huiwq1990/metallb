@@ -35,7 +35,7 @@ func New(l log.Logger) (*Announce, error) {
 
 	return ret, nil
 }
-
+// 定时更新网卡列表，构建ARP Responser
 func (a *Announce) interfaceScan() {
 	for {
 		a.updateInterfaces()
@@ -62,10 +62,11 @@ func (a *Announce) updateInterfaces() {
 			l.Log("op", "getAddresses", "error", err, "msg", "couldn't get addresses for interface")
 			return
 		}
-
+		// 忽略没有启动的网卡
 		if ifi.Flags&net.FlagUp == 0 {
 			continue
 		}
+		//
 		if _, err = os.Stat("/sys/class/net/" + ifi.Name + "/master"); !os.IsNotExist(err) {
 			continue
 		}
@@ -131,9 +132,11 @@ func (a *Announce) updateInterfaces() {
 	return
 }
 
+// 发送Gratuitous
 func (a *Announce) spam(name string) {
 	// TODO: should abort if we lose control of the IP mid-spam.
 	start := time.Now()
+	// 多次尝试
 	for time.Since(start) < 5*time.Second {
 		if err := a.gratuitous(name); err != nil {
 			a.logger.Log("op", "gratuitousAnnounce", "error", err, "service", name, "msg", "failed to make gratuitous IP announcement")
@@ -178,7 +181,7 @@ func (a *Announce) shouldAnnounce(ip net.IP) dropReason {
 	}
 	return dropReasonAnnounceIP
 }
-
+// 给announce添加LoadBalancerIP，添加到ips属性里
 // SetBalancer adds ip to the set of announced addresses.
 func (a *Announce) SetBalancer(name string, ip net.IP) {
 	a.Lock()
@@ -203,7 +206,7 @@ func (a *Announce) SetBalancer(name string, ip net.IP) {
 			a.logger.Log("op", "watchMulticastGroup", "error", err, "ip", ip, "msg", "failed to watch NDP multicast group for IP, NDP responder will not respond to requests for this address")
 		}
 	}
-
+	// 针对暴露的每个LoadBalancer IP，都会定时进行ARP广播
 	go a.spam(name)
 
 }
