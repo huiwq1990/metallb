@@ -120,6 +120,8 @@ func New(cfg *Config) (*Client, error) {
 	if cfg.ServiceChanged != nil {
 		svcHandlers := cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
+				// 获取svc的key，格式：<namespace>/<name>
+				// 后面的回调函数都是使用key进行的
 				key, err := cache.MetaNamespaceKeyFunc(obj)
 				if err == nil {
 					c.queue.Add(svcKey(key))

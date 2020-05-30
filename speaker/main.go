@@ -191,6 +191,8 @@ func event2String(e memberlist.NodeEventType) string {
 	return [...]string{"NodeJoin", "NodeLeave", "NodeUpdate"}[e]
 }
 
+// 如果节点发生变更，会强制更新watch。
+// 加入node1挂掉，node2执行service变更，从而分配的LBIP绑定的公网IP会变化。
 func watchMemberListEvents(logger gokitlog.Logger, eventCh chan memberlist.NodeEvent, stopCh chan struct{}, client *k8s.Client) {
 	for {
 		select {

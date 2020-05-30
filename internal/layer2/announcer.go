@@ -43,6 +43,7 @@ func (a *Announce) interfaceScan() {
 	}
 }
 
+// 选取的网卡，需要是UP状态，没有设置NOARP，
 func (a *Announce) updateInterfaces() {
 	ifs, err := net.Interfaces()
 	if err != nil {
@@ -206,7 +207,7 @@ func (a *Announce) SetBalancer(name string, ip net.IP) {
 			a.logger.Log("op", "watchMulticastGroup", "error", err, "ip", ip, "msg", "failed to watch NDP multicast group for IP, NDP responder will not respond to requests for this address")
 		}
 	}
-	// 针对暴露的每个LoadBalancer IP，都会定时进行ARP广播
+	// 针对暴露的每个LoadBalancer IP，都会进行ARP广播
 	go a.spam(name)
 
 }

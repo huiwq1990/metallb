@@ -76,6 +76,7 @@ func usableNodes(eps *v1.Endpoints, mList *memberlist.Memberlist) []string {
 }
 
 func (c *layer2Controller) ShouldAnnounce(l log.Logger, name string, svc *v1.Service, eps *v1.Endpoints) string {
+	// 获取可用的Node，hash之后计算选取哪个节点
 	nodes := usableNodes(eps, c.mList)
 	// Sort the slice by the hash of node + service name. This
 	// produces an ordering of ready nodes that is unique to this
@@ -109,6 +110,7 @@ func (c *layer2Controller) DeleteBalancer(l log.Logger, name, reason string) err
 	return nil
 }
 
+// node节点变更不做任何操作
 func (c *layer2Controller) SetNode(log.Logger, *v1.Node) error {
 	return nil
 }

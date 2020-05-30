@@ -69,6 +69,7 @@ func (a *arpResponder) run() {
 	}
 }
 
+// 接收arp请求
 func (a *arpResponder) processRequest() dropReason {
 	pkt, eth, err := a.conn.Read()
 	if err != nil {

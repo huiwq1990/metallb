@@ -23,10 +23,10 @@ import (
 
 	"go.universe.tf/metallb/internal/allocator/k8salloc"
 )
-
+//key的格式 <namespace>/<name>
 func (c *controller) convergeBalancer(l log.Logger, key string, svc *v1.Service) bool {
 	var lbIP net.IP
-
+	// 不是loadbalancer类型的直接返回
 	// Not a LoadBalancer, early exit. It might have been a balancer
 	// in the past, so we still need to clear LB state.
 	if svc.Spec.Type != "LoadBalancer" {
@@ -37,6 +37,7 @@ func (c *controller) convergeBalancer(l log.Logger, key string, svc *v1.Service)
 		return true
 	}
 
+	// 保持 clusterip和loadbalancer的 协议栈一致，比如都是用ipv4
 	// If the ClusterIP is malformed or not set we can't determine the
 	// ipFamily to use.
 	clusterIP := net.ParseIP(svc.Spec.ClusterIP)
@@ -94,7 +95,7 @@ func (c *controller) convergeBalancer(l log.Logger, key string, svc *v1.Service)
 		c.clearServiceState(key, svc)
 		lbIP = nil
 	}
-
+	// 从地址池里获取lb ip
 	// If lbIP is still nil at this point, try to allocate.
 	if lbIP == nil {
 		if !c.synced {
@@ -115,13 +116,14 @@ func (c *controller) convergeBalancer(l log.Logger, key string, svc *v1.Service)
 		c.client.Infof(svc, "IPAllocated", "Assigned IP %q", lbIP)
 	}
 
+	// 尝试分配lbip，但是分配失败
 	if lbIP == nil {
 		l.Log("bug", "true", "msg", "internal error: failed to allocate an IP, but did not exit convergeService early!")
 		c.client.Errorf(svc, "InternalError", "didn't allocate an IP but also did not fail")
 		c.clearServiceState(key, svc)
 		return true
 	}
-
+	// 检查分配结果
 	pool := c.ips.Pool(key)
 	if pool == "" || c.config.Pools[pool] == nil {
 		l.Log("bug", "true", "ip", lbIP, "msg", "internal error: allocated IP has no matching address pool")

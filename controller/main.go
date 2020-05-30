@@ -150,7 +150,7 @@ func main() {
 		ConfigMapName: *config,
 		MetricsPort:   *port,
 		Logger:        logger,
-
+		// 注册Service变更回调
 		ServiceChanged: c.SetBalancer,
 		ConfigChanged:  c.SetConfig,
 		Synced:         c.MarkSynced,
